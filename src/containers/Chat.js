@@ -1,10 +1,43 @@
 import React, { Component } from "react";
+import { SET_TYPING_VALUE } from "../constants/action-types";
 import "./Chats.css";
-const Chat = ({ message }) => {
+import store from "../store";
+import { toggleMessageEdit } from "../actions";
+const Chat = ({ message, number }) => {
   const { text, is_user_msg } = message;
+  const { activeUserId, MessageEditing } = store.getState();
+  const { editingStatus, user_id, message_key } = MessageEditing;
+  const onEdit = () => {
+    let _onEdit = false;
+    if (activeUserId === user_id && number === message_key) {
+      _onEdit = editingStatus;
+    }
+    return _onEdit;
+  };
+
   return (
-    <span className={`Chat ${is_user_msg ? "is-user-msg" : ""}`}>{text}</span>
+    <span className={`Chat ${is_user_msg ? "is-user-msg" : ""}`}>
+      <svg
+        className={`Chat__close ${onEdit() ? "btn-active" : ""}`}
+        onClick={() => {
+          MessageToggle({ editingStatus, activeUserId, number, text });
+        }}
+      >
+        <use href={"./symbol-defs.svg#icon-pencil"} title={"Edit message"} />
+      </svg>
+      {text}
+    </span>
   );
+};
+
+const MessageToggle = ({ editingStatus, activeUserId, number, text }) => {
+  if (editingStatus) {
+    store.dispatch(toggleMessageEdit({ editingStatus, activeUserId, number }));
+    store.dispatch({ type: SET_TYPING_VALUE, payload: "" });
+  } else {
+    store.dispatch(toggleMessageEdit({ editingStatus, activeUserId, number }));
+    store.dispatch({ type: SET_TYPING_VALUE, payload: text });
+  }
 };
 
 class Chats extends Component {
@@ -25,7 +58,11 @@ class Chats extends Component {
     return (
       <div className="Chats" ref={this.chatsRef}>
         {this.props.messages.map(message => (
-          <Chat message={message} key={message.number} />
+          <Chat
+            message={message}
+            number={message.number}
+            key={message.number}
+          />
         ))}
       </div>
     );
